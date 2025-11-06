@@ -84,7 +84,7 @@ def main():
                     # Print to default printer
                     if ("--preview" in sys.argv):
                         preview(lines)
-                    elif ("--print" in sys.argv):
+                    elif ("--print" in sys.argv or "--printer" in sys.argv):
                         send_to_lpr(lines)
                         print(f"Printed birthday banner for: {name}")
                     else:
