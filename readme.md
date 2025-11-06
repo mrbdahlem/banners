@@ -1,7 +1,3 @@
-Here is a clean **project README** (neutral, instructional tone — not the playful persona):
-
----
-
 # Birthday Banner Printer
 
 This project generates **sideways dot-matrix style banners** on a classic 80×66 text page format using a custom ASCII banner renderer.
