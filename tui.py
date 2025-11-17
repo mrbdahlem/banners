@@ -100,8 +100,8 @@ class BannerTUI:
         if curses.has_colors():
             curses.start_color()
             curses.use_default_colors()
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)  # Highlight - white on blue
-        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_BLUE)  # Headers
+        curses.init_pair(1, curses.COLOR_BLUE, -1)  # Highlight - blue on default
+        curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLUE)  # Headers - white on blue
         curses.init_pair(3, curses.COLOR_YELLOW, -1)  # Messages (default background)
         curses.init_pair(4, curses.COLOR_CYAN, -1)   # Custom text (default background)
         curses.init_pair(5, curses.COLOR_BLUE, -1)  # Preview borders (default background)
