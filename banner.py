@@ -100,27 +100,28 @@ def compute_auto_zoom(text: str,
                       margin_lines: int = MARGIN_DEFAULT,
                       side_margin_cols: int = SIDE_MARGIN_DEFAULT) -> int:
     """
-    Auto-zoom:
-      1) Try to fit the whole banner within ONE page vertically (with margin_lines top/bottom).
-      2) If impossible, width-fill while leaving side_margin_cols on left/right.
-    Guarantees zoom >= 1.
+    Auto-zoom to fill vertical space after rotation.
+    
+    After CW rotation, the 80-column width becomes 80 lines of vertical space.
+    We want each letter to fill that vertical space, allowing the banner to span
+    multiple pages horizontally for longer text.
+    
+    The zoom is calculated to fit one letter's width (GLYPH_H=7) into the 
+    available page width (page_cols), which becomes the vertical height after rotation.
     """
     text = (text or "").upper()
-    n = len(text)
-    if n == 0:
+    if len(text) == 0:
         return 1
 
-    usable_lines = max(0, page_lines - 2*margin_lines)
-    denom_height_per_zoom = n*GLYPH_W + (n-1)*h_space  # rotated vertical height per zoom
-
-    zoom_by_height = (usable_lines // denom_height_per_zoom) if denom_height_per_zoom > 0 else 1
-    zoom_by_width  = max(1, (page_cols - 2*side_margin_cols) // GLYPH_H)  # GLYPH_H=7
-
-    if zoom_by_height >= 1:
-        return min(zoom_by_height, zoom_by_width)
-
-    # Can't fit on one page -> width-fill with side margins
-    return zoom_by_width
+    # Calculate zoom to fill the vertical space (page_cols becomes height after rotation)
+    # Account for side margins
+    usable_width = max(0, page_cols - 2*side_margin_cols)
+    
+    # Each glyph is GLYPH_H (7) pixels tall, which becomes width after rotation
+    # We want to maximize zoom to fill the vertical space
+    zoom = max(1, usable_width // GLYPH_H)
+    
+    return zoom
 
 def render_line_to_bitmap(text: str, h_space: int = 1) -> List[List[str]]:
     """
@@ -194,14 +195,19 @@ def center_on_pages(rot: List[List[str]],
     return out
 
 def banner_lines(text: str,
-                 page_lines: int = 66,      # 66 lines tall
-                 page_cols: int = 80,       # 80 columns wide
+                 page_lines: int = 66,      # Page height in lines
+                 page_cols: int = 80,       # Page width in columns
                  rotate: str = "cw",
                  h_space: int = 1,
                  zoom: int = 0,
                  margin: int = MARGIN_DEFAULT,
                  side_margin_cols: int = SIDE_MARGIN_DEFAULT) -> List[str]:
     """
+    Generate sideways banner lines for dot-matrix printing.
+    
+    Page dimensions: 80 columns wide × 66 lines tall (standard page)
+    After CW rotation: banner runs vertically down the 80-column width.
+    
     If zoom <= 0, pick an integer zoom:
       - Prefer single-page height fit with top/bottom margin.
       - Else width-fill with left/right side margin.
@@ -231,8 +237,8 @@ def send_to_lpr(lines: List[str], printer: str = None) -> None:
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Sideways ASCII banner -> lpr")
-    parser.add_argument("--lines", type=int, default=80, help="Lines per page (default: 80)")
-    parser.add_argument("--cols", type=int, default=66, help="Columns per page (default: 66)")
+    parser.add_argument("--lines", type=int, default=66, help="Page height in lines (default: 66)")
+    parser.add_argument("--cols", type=int, default=80, help="Page width in columns (default: 80)")
     parser.add_argument("--rotate", choices=["ccw", "cw"], default="cw", help="Rotate 90° (default: cw)")
     parser.add_argument("--zoom", type=int, default=0, help="Integer zoom; 0=auto to hit ~5-line margins (default)")
     parser.add_argument("--margin", type=int, default=5, help="Top/bottom margin in lines for auto-zoom")

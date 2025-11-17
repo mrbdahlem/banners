@@ -1,10 +1,11 @@
 # Birthday Banner Printer
 
 This project generates **sideways dot-matrix style banners** on a classic 80×66 text page format using a custom ASCII banner renderer.
-It includes two main components:
+It includes three main components:
 
 * `banner.py` — renders large sideways ASCII text banners.
 * `birthdays.py` — checks a CSV for birthdays and prints (or previews) birthday banners.
+* `tui.py` — **interactive text user interface** for selecting and printing banners (perfect for Raspberry Pi!).
 
 ---
 
@@ -22,6 +23,7 @@ It includes two main components:
 | --------------- | ----------------------------------------------------------------------- |
 | `banner.py`     | Renders banner text, handles rotation, centering, scaling, and printing |
 | `birthdays.py`  | Reads a birthday CSV and prints or previews birthday messages           |
+| `tui.py`        | **Interactive TUI for selecting birthdays and creating custom banners** |
 | `birthdays.csv` | User-provided CSV of names and birthdays                                |
 
 ---
@@ -46,6 +48,34 @@ Charlotte,Charlie,March 5, 2007
 ```
 
 If today matches the **month and day** of the birthday, a banner is generated.
+
+---
+
+## Usage: Interactive TUI (Recommended)
+
+The **Text User Interface** (`tui.py`) provides the best experience for selecting and printing banners on a Raspberry Pi:
+
+```bash
+python3 tui.py
+```
+
+### TUI Features
+
+* **Split-panel interface:**
+  * **Left panel:** Browse birthdays from CSV or enter custom text
+  * **Right panel:** Real-time scrollable banner preview
+  
+* **Controls:**
+  * `↑/↓` - Navigate birthday list
+  * `←/→` - Scroll preview horizontally (if window is narrow)
+  * `PgUp/PgDn` - Scroll preview vertically
+  * `TAB` - Switch between Birthday mode and Custom text mode
+  * `Type` - Enter custom text when in Custom mode (any letter including 'p' and 'q')
+  * `Backspace` - Delete characters
+  * `Ctrl+P` - Print the current banner (works in both modes)
+  * `ESC` - Quit
+  
+* **Works great on Raspberry Pi** with any terminal (SSH, console, etc.)
 
 ---
 
