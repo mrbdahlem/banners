@@ -243,19 +243,24 @@ class BannerTUI:
         bday_marker = "▶" if self.mode == "birthday" else " "
         custom_marker = "▶" if self.mode == "custom" else " "
         
-        win.addstr(y, 2, f"{bday_marker} Birthday Banners", 
-                  curses.color_pair(1) | curses.A_BOLD if self.mode == "birthday" else curses.A_NORMAL)
-        y += 1
+        # Birthday list - only show when in birthday mode
+        if self.mode == "birthday":
+            win.addstr(y, 2, f"{bday_marker} Birthday Banners", 
+                      curses.color_pair(1) | curses.A_BOLD)
+            y += 1
         
-        # Birthday list
-        if self.birthdays:
+        if self.mode == "birthday" and self.birthdays:
             list_start_y = y
-            list_height = h - y - 12  # Available space for list
+            # Calculate list height based on whether controls are shown
+            controls_height = 9 if h >= 14 else 0
+            list_height = h - y - controls_height - 2  # Available space for list
             self.birthday_visible_height = list_height  # Store for scroll calculations
             
             # Show scrollable birthday list
             for i in range(self.birthday_scroll, min(len(self.birthdays), self.birthday_scroll + list_height)):
-                if y >= h - 9:
+                if h >= 14 and y >= h - 9:
+                    break
+                elif h < 14 and y >= h - 2:
                     break
                     
                 bday = self.birthdays[i]
@@ -274,56 +279,53 @@ class BannerTUI:
                 
             # Show scroll indicator if needed
             if len(self.birthdays) > list_height:
-                scroll_info = f" [{self.birthday_scroll + 1}-{min(self.birthday_scroll + list_height, len(self.birthdays))}/{len(self.birthdays)}] "
+                scroll_info = f" [{self.selected_idx + 1}/{len(self.birthdays)}] "
                 try:
                     win.addstr(list_start_y - 1, w - len(scroll_info) - 2, scroll_info, curses.A_DIM)
                 except curses.error:
                     pass
-        else:
-            # Show the actual filename that was attempted
+        elif self.mode == "birthday":
+            # Show the actual filename that was attempted (only in birthday mode)
             msg = f"  (No {self.csv_file} found)"
             if len(msg) > w - 4:
                 msg = f"  (File not found)"
             win.addstr(y, 2, msg, curses.A_DIM)
             y += 1
             
-        y += 1
+        if self.mode == "birthday":
+            y += 1
         
-        # Custom text input
-        win.addstr(y, 2, f"{custom_marker} Custom Banner", 
-                  curses.color_pair(1) | curses.A_BOLD if self.mode == "custom" else curses.A_NORMAL)
-        y += 1
-        
+        # Custom text input - only show when in custom mode
         if self.mode == "custom":
+            win.addstr(y, 2, f"{custom_marker} Custom Banner", 
+                      curses.color_pair(1) | curses.A_BOLD)
+            y += 1
+            
             win.addstr(y, 2, "  Text: ", curses.color_pair(4))
             input_text = self.custom_text + "_"
             if len(input_text) > w - 11:
                 input_text = "..." + input_text[-(w-14):]
             win.addstr(y, 9, input_text, curses.color_pair(4) | curses.A_BOLD)
-        else:
-            display_text = self.custom_text if self.custom_text else "(type to enter text)"
-            if len(display_text) > w - 11:
-                display_text = display_text[:w-14] + "..."
-            win.addstr(y, 2, f"  Text: {display_text}", curses.A_DIM)
-        y += 2
+            y += 2
         
-        # Instructions
-        y = h - 9
-        win.addstr(y, 2, "Controls:", curses.color_pair(3) | curses.A_BOLD)
-        y += 1
-        win.addstr(y, 2, "↑/↓    : Navigate birthdays")
-        y += 1
-        win.addstr(y, 2, "←/→    : Scroll preview H")
-        y += 1
-        win.addstr(y, 2, "PgUp/Dn: Scroll preview V")
-        y += 1
-        win.addstr(y, 2, "TAB    : Birthday/Custom")
-        y += 1
-        win.addstr(y, 2, "Ctrl+O : Open CSV file")
-        y += 1
-        win.addstr(y, 2, "Ctrl+P : Print banner")
-        y += 1
-        win.addstr(y, 2, "ESC    : Quit")
+        # Instructions - only show if there's enough space (at least 14 lines from bottom)
+        if h >= 14:
+            y = h - 9
+            win.addstr(y, 2, "Controls:", curses.color_pair(3) | curses.A_BOLD)
+            y += 1
+            win.addstr(y, 2, "↑/↓    : Navigate birthdays")
+            y += 1
+            win.addstr(y, 2, "←/→    : Scroll preview H")
+            y += 1
+            win.addstr(y, 2, "PgUp/Dn: Scroll preview V")
+            y += 1
+            win.addstr(y, 2, "TAB    : Birthday/Custom")
+            y += 1
+            win.addstr(y, 2, "Ctrl+O : Open CSV file")
+            y += 1
+            win.addstr(y, 2, "Ctrl+P : Print banner")
+            y += 1
+            win.addstr(y, 2, "ESC    : Quit")
         
         win.refresh()
         
@@ -416,8 +418,20 @@ class BannerTUI:
                     # Apply horizontal scroll if needed
                     display_line = display_line[self.preview_h_scroll:self.preview_h_scroll + display_width]
                     
+                    # Draw with color_pair(5) for the borders
                     try:
-                        win.addstr(2 + i, left_offset, display_line)
+                        # Draw left border if visible
+                        if self.preview_h_scroll == 0:
+                            win.addstr(2 + i, left_offset, "|", curses.color_pair(5))
+                            win.addstr(2 + i, left_offset + 1, display_line[1:])
+                        else:
+                            win.addstr(2 + i, left_offset, display_line)
+                        
+                        # Draw right border if visible
+                        if self.preview_h_scroll + display_width >= 82:
+                            # Calculate position of the right border
+                            right_pos = left_offset + min(display_width - 1, len(display_line) - 1)
+                            win.addstr(2 + i, right_pos, "|", curses.color_pair(5))
                     except curses.error:
                         pass
             
@@ -635,7 +649,7 @@ class BannerTUI:
         
     def run(self):
         """Main TUI loop"""
-        # Set background and clear
+        # # Set background and clear
         self.stdscr.bkgd(' ', curses.A_NORMAL)
         self.stdscr.clear()
         self.stdscr.refresh()
@@ -653,7 +667,7 @@ class BannerTUI:
         self.draw_right_panel(right_win, h - 1, right_w)
         self.draw_message(msg_win, w)
         
-        self.stdscr.nodelay(True)  # Non-blocking mode - keeps display visible
+        # self.stdscr.nodelay(True)  # Non-blocking mode - keeps display visible
                 
         while True:
             # Get input
