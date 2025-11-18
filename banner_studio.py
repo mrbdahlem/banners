@@ -50,19 +50,41 @@ def parse_date(date_str: str) -> Optional[datetime.date]:
             pass
     return None
 
-def load_birthdays(csv_file: str = DEFAULT_CSV) -> List[BirthdayEntry]:
-    """Load birthdays from CSV file"""
+def load_birthdays(csv_file: str = DEFAULT_CSV) -> Tuple[List[BirthdayEntry], Optional[str]]:
+    """Load birthdays from CSV file. Returns (birthdays, error_message)"""
     birthdays = []
+    
     if not os.path.exists(csv_file):
-        return birthdays
+        return birthdays, f"File not found: {csv_file}"
         
     try:
         with open(csv_file, newline='', encoding="utf-8") as f:
             reader = csv.DictReader(f)
+            
+            # Check for required columns
+            if reader.fieldnames is None:
+                return birthdays, f"Empty or invalid CSV file: {csv_file}"
+            
+            # Create case-insensitive column mapping
+            col_map = {col.lower(): col for col in reader.fieldnames}
+            
+            # Check for required columns (case-insensitive)
+            if "first name" not in col_map and "date of birth" not in col_map:
+                return birthdays, f"Missing required columns: First Name, Date of Birth"
+            elif "first name" not in col_map:
+                return birthdays, f"Missing required column: First Name"
+            elif "date of birth" not in col_map:
+                return birthdays, f"Missing required column: Date of Birth"
+            
+            # Get actual column names
+            first_col = col_map["first name"]
+            dob_col = col_map["date of birth"]
+            alias_col = col_map.get("alias")
+            
             for row in reader:
-                first = row.get("First Name", "").strip()
-                alias = row.get("Alias", "").strip()
-                dob_str = row.get("Date of Birth", "").strip()
+                first = row.get(first_col, "").strip()
+                alias = row.get(alias_col, "").strip() if alias_col else ""
+                dob_str = row.get(dob_col, "").strip()
                 
                 if not dob_str:
                     continue
@@ -73,10 +95,10 @@ def load_birthdays(csv_file: str = DEFAULT_CSV) -> List[BirthdayEntry]:
                     
         # Sort by month, then day
         birthdays.sort(key=lambda b: (b.dob.month, b.dob.day))
-    except Exception:
-        pass
+    except Exception as e:
+        return birthdays, f"Error reading CSV: {str(e)}"
         
-    return birthdays
+    return birthdays, None
 
 class BannerTUI:
     """Main TUI application for banner printing"""
@@ -84,7 +106,9 @@ class BannerTUI:
     def __init__(self, stdscr, csv_file: str = DEFAULT_CSV):
         self.stdscr = stdscr
         self.csv_file = csv_file
-        self.birthdays = load_birthdays(csv_file)
+        self.birthdays, load_error = load_birthdays(csv_file)
+        if load_error:
+            self.show_error_dialog(load_error)
         self.selected_idx = 0
         self.birthday_scroll = 0  # Scroll offset for birthday list
         self.birthday_visible_height = 15  # Will be updated dynamically
@@ -112,10 +136,14 @@ class BannerTUI:
         """Reload birthdays from CSV file"""
         if csv_file:
             self.csv_file = csv_file
-        self.birthdays = load_birthdays(self.csv_file)
+        self.birthdays, load_error = load_birthdays(self.csv_file)
         self.selected_idx = 0
         self.birthday_scroll = 0
-        if self.birthdays:
+        
+        if load_error:
+            self.show_error_dialog(load_error)
+            self.message = f"Error loading {self.csv_file}"
+        elif self.birthdays:
             self.message = f"Loaded {len(self.birthdays)} birthdays from {self.csv_file}"
         else:
             self.message = f"No birthdays found in {self.csv_file}"
@@ -179,6 +207,49 @@ class BannerTUI:
             elif 32 <= key <= 126:  # Printable characters
                 input_str = input_str[:cursor_pos] + chr(key) + input_str[cursor_pos:]
                 cursor_pos += 1
+    
+    def show_error_dialog(self, error_message: str):
+        """Show an error dialog with the given message"""
+        h, w = self.stdscr.getmaxyx()
+        
+        # Wrap message to fit in dialog
+        max_width = min(60, w - 8)
+        lines = []
+        words = error_message.split()
+        current_line = ""
+        
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            if len(test_line) <= max_width - 4:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+        
+        # Create error window
+        dialog_height = min(len(lines) + 4, h - 4)
+        dialog_width = min(max_width, w - 4)
+        dialog_win = curses.newwin(dialog_height, dialog_width, 
+                                   (h - dialog_height) // 2, 
+                                   (w - dialog_width) // 2)
+        dialog_win.box()
+        dialog_win.addstr(0, 2, " Error ", curses.color_pair(3) | curses.A_BOLD)
+        
+        # Display message lines
+        for i, line in enumerate(lines[:dialog_height - 4]):
+            dialog_win.addstr(i + 2, 2, line)
+        
+        # Show prompt
+        prompt = "Press any key to continue"
+        dialog_win.addstr(dialog_height - 2, (dialog_width - len(prompt)) // 2, 
+                         prompt, curses.A_DIM)
+        dialog_win.refresh()
+        
+        # Wait for keypress
+        dialog_win.getch()
         
     def get_current_text(self) -> str:
         """Get the current text to preview/print"""

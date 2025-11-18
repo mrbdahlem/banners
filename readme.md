@@ -47,8 +47,6 @@ Brian,,03/05/2002
 Charlotte,Charlie,March 5, 2007
 ```
 
-If today matches the **month and day** of the birthday, a banner is generated.
-
 ---
 
 ## Usage: Interactive Banner Studio (Recommended)
@@ -159,7 +157,7 @@ python3 banner.py "HELLO WORLD" --print
 * Output is **centered** across:
 
   * Page width (default 80 columns)
-  * Page height (default 66 lines, including automatic top/bottom padding)
+  * Multiple page height (default 66 lines/page, including automatic top/bottom padding)
 
 The default sizing automatically attempts to:
 
