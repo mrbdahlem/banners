@@ -5,7 +5,7 @@ It includes three main components:
 
 * `banner.py` — renders large sideways ASCII text banners.
 * `birthdays.py` — checks a CSV for birthdays and prints (or previews) birthday banners.
-* `tui.py` — **interactive text user interface** for selecting and printing banners (perfect for Raspberry Pi!).
+* `banner_studio.py` — **interactive text user interface** for selecting and printing banners (perfect for Raspberry Pi!).
 
 ---
 
@@ -19,12 +19,12 @@ It includes three main components:
 
 ## Files
 
-| File            | Description                                                             |
-| --------------- | ----------------------------------------------------------------------- |
-| `banner.py`     | Renders banner text, handles rotation, centering, scaling, and printing |
-| `birthdays.py`  | Reads a birthday CSV and prints or previews birthday messages           |
-| `tui.py`        | **Interactive TUI for selecting birthdays and creating custom banners** |
-| `birthdays.csv` | User-provided CSV of names and birthdays                                |
+| File                 | Description                                                             |
+| -------------------- | ----------------------------------------------------------------------- |
+| `banner.py`          | Renders banner text, handles rotation, centering, scaling, and printing |
+| `birthdays.py`       | Reads a birthday CSV and prints or previews birthday messages           |
+| `banner_studio.py`   | **Interactive TUI for selecting birthdays and creating custom banners** |
+| `birthdays.csv`      | User-provided CSV of names and birthdays                                |
 
 ---
 
@@ -51,29 +51,41 @@ If today matches the **month and day** of the birthday, a banner is generated.
 
 ---
 
-## Usage: Interactive TUI (Recommended)
+## Usage: Interactive Banner Studio (Recommended)
 
-The **Text User Interface** (`tui.py`) provides the best experience for selecting and printing banners on a Raspberry Pi:
+The **Banner Studio** (`banner_studio.py`) provides the best experience for selecting and printing banners on a Raspberry Pi:
 
 ```bash
-python3 tui.py
+./banner_studio.py
 ```
 
-### TUI Features
+Or optionally specify a CSV file:
+
+```bash
+./banner_studio.py my_birthdays.csv
+```
+
+### Banner Studio Features
 
 * **Split-panel interface:**
   * **Left panel:** Browse birthdays from CSV or enter custom text
-  * **Right panel:** Real-time scrollable banner preview
+  * **Right panel:** Real-time scrollable banner preview with page borders
   
 * **Controls:**
   * `↑/↓` - Navigate birthday list
-  * `←/→` - Scroll preview horizontally (if window is narrow)
+  * `←/→` - Scroll preview horizontally
   * `PgUp/PgDn` - Scroll preview vertically
   * `TAB` - Switch between Birthday mode and Custom text mode
-  * `Type` - Enter custom text when in Custom mode (any letter including 'p' and 'q')
+  * `Type` - Enter custom text when in Custom mode
   * `Backspace` - Delete characters
+  * `Ctrl+O` - Open/reload a different CSV file
   * `Ctrl+P` - Print the current banner (works in both modes)
   * `ESC` - Quit
+  
+* **Adaptive interface:**
+  * Automatically hides controls on small screens to maximize content
+  * Shows only active mode (Birthday or Custom) to save space
+  * Scroll indicators show position in long lists and previews
   
 * **Works great on Raspberry Pi** with any terminal (SSH, console, etc.)
 
@@ -160,18 +172,40 @@ The default sizing automatically attempts to:
 
 ## Scheduling (Optional)
 
-To print banners automatically each morning:
+To print birthday banners automatically each morning, use `cron` to run `birthdays.py` with the `--print` flag.
 
 **Linux / macOS (`cron`):**
+
+1. Edit your crontab:
 
 ```bash
 crontab -e
 ```
 
-Add:
+2. Add a line to run at 7:00 AM daily:
 
 ```
 0 7 * * * /usr/bin/python3 /path/to/birthdays.py --print
+```
+
+**Example with specific paths (Raspberry Pi):**
+
+```
+0 7 * * * /usr/bin/python3 /home/pi/banners/birthdays.py --print
+```
+
+This will check `birthdays.csv` each morning and automatically print banners for anyone with a birthday that day.
+
+**To use a different CSV file:**
+
+```
+0 7 * * * /usr/bin/python3 /home/pi/banners/birthdays.py /home/pi/staff_birthdays.csv --print
+```
+
+**Tip:** Test your command manually first to ensure the printer works:
+
+```bash
+/usr/bin/python3 /home/pi/banners/birthdays.py --print
 ```
 
 ---
