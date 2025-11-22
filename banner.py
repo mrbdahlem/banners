@@ -258,13 +258,19 @@ def main():
                          zoom=args.zoom,
                          margin=args.margin)
 
-    if args.preview or not args.printer:
+    if args.preview:
         for i, line in enumerate(lines, 1):
             print(line)
             if i % args.lines == 0 and i != len(lines):
                 print("-" * args.cols)
-    else:
+    elif args.printer is not None:
         send_to_lpr(lines, printer=(args.printer or None))
+    else:
+        # Default to preview if neither option specified
+        for i, line in enumerate(lines, 1):
+            print(line)
+            if i % args.lines == 0 and i != len(lines):
+                print("-" * args.cols)
 
 def test_banner():
     # 66 lines x 80 columns page, CW rotation
