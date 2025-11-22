@@ -22,6 +22,7 @@ from typing import List, Tuple, Optional
 from banner import banner_lines, send_to_lpr
 
 DEFAULT_CSV = "birthdays.csv"
+DEFAULT_PRINTER = None  # Set to printer name (e.g., "lp0") or None for system default
 
 class BirthdayEntry:
     """Represents a birthday entry from CSV"""
@@ -704,8 +705,9 @@ class BannerTUI:
             text = self.get_current_text()
             if text and self.preview_lines:
                 try:
-                    send_to_lpr(self.preview_lines)
-                    self.message = f"Printing: {text}"
+                    send_to_lpr(self.preview_lines, printer=DEFAULT_PRINTER)
+                    printer_msg = f" to {DEFAULT_PRINTER}" if DEFAULT_PRINTER else ""
+                    self.message = f"Printing{printer_msg}: {text}"
                 except Exception as e:
                     self.message = f"Print error: {str(e)}"
             else:

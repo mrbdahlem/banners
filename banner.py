@@ -237,9 +237,11 @@ def send_to_lpr(lines: List[str], printer: str = None) -> None:
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Sideways ASCII banner -> lpr")
+    parser.add_argument("text", help="Text to print on the banner")
     parser.add_argument("--lines", type=int, default=66, help="Page height in lines (default: 66)")
     parser.add_argument("--cols", type=int, default=80, help="Page width in columns (default: 80)")
     parser.add_argument("--rotate", choices=["ccw", "cw"], default="cw", help="Rotate 90° (default: cw)")
+    parser.add_argument("--space", type=int, default=1, help="Horizontal space between letters (default: 1)")
     parser.add_argument("--zoom", type=int, default=0, help="Integer zoom; 0=auto to hit ~5-line margins (default)")
     parser.add_argument("--margin", type=int, default=5, help="Top/bottom margin in lines for auto-zoom")
 
@@ -290,5 +292,5 @@ def test_banner():
 
 
 if __name__ == "__main__":
-    #main()
-    test_banner()
+    main()
+    #test_banner()
